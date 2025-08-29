@@ -1,0 +1,59 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: powar-java-backend
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/powar_db?useSSL=false&serverTimezone=UTC
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+
+  security:
+    user:
+      name: admin
+      password: admin
+
+# Python API Configuration
+python:
+  api:
+    base-url: ${PYTHON_API_URL:http://localhost:5000}
+    endpoints:
+      members: /api/python/members
+      blogs: /api/python/blogs
+      communities: /api/python/communities
+      analytics: /api/python/analytics
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:powarSecretKey123456789012345678901234567890}
+  expiration: 86400000 # 24 hours in milliseconds
+
+# Logging
+logging:
+  level:
+    com.powar: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
