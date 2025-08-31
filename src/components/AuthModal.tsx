@@ -16,7 +16,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   defaultMode = 'login' 
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
-  const { isAuthenticated } = useAuth();
+  let authContext;
+  try {
+    authContext = useAuth();
+  } catch (error) {
+    console.error('Error getting auth context in AuthModal:', error);
+    authContext = {
+      isAuthenticated: false,
+    };
+  }
+  const { isAuthenticated } = authContext;
 
   // Close modal if user is authenticated
   React.useEffect(() => {

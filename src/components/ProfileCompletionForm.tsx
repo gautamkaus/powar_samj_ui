@@ -55,8 +55,8 @@ export const ProfileCompletionForm = ({ isOpen, onClose, onSubmit, isLoading = f
         masterDataAPI.getProfessions()
       ]);
       
-      setStates(statesRes.data || []);
-      setProfessions(professionsRes.data || []);
+      setStates(statesRes.states || []);
+      setProfessions(professionsRes.professions || []);
     } catch (error) {
       console.error('Error loading master data:', error);
     } finally {
@@ -67,7 +67,7 @@ export const ProfileCompletionForm = ({ isOpen, onClose, onSubmit, isLoading = f
   const loadDistricts = async (stateId: number) => {
     try {
       const response = await masterDataAPI.getDistrictsByState(stateId);
-      setDistricts(response.data || []);
+      setDistricts(response.districts || []);
       setFormData(prev => ({ ...prev, district_id: '', tahsil_id: '' }));
       setTahsils([]);
     } catch (error) {
@@ -78,7 +78,7 @@ export const ProfileCompletionForm = ({ isOpen, onClose, onSubmit, isLoading = f
   const loadTahsils = async (districtId: number) => {
     try {
       const response = await masterDataAPI.getTahsilsByDistrict(districtId);
-      setTahsils(response.data || []);
+      setTahsils(response.tahsils || []);
       setFormData(prev => ({ ...prev, tahsil_id: '' }));
     } catch (error) {
       console.error('Error loading tahsils:', error);

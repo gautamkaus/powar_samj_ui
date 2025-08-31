@@ -17,7 +17,18 @@ export const Navbar = () => {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [isStoringPhone, setIsStoringPhone] = useState(false);
   const t = useTranslation();
-  const { isAuthenticated, user, logout } = useAuth();
+  let authContext;
+  try {
+    authContext = useAuth();
+  } catch (error) {
+    console.error('Error getting auth context in Navbar:', error);
+    authContext = {
+      isAuthenticated: false,
+      user: null,
+      logout: () => {},
+    };
+  }
+  const { isAuthenticated, user, logout } = authContext;
   const navigate = useNavigate();
 
   const handleSignIn = () => {

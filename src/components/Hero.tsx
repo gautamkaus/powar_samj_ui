@@ -14,7 +14,16 @@ export const Hero = () => {
   const [isPhonePopupOpen, setIsPhonePopupOpen] = useState(false);
   const [isStoringPhone, setIsStoringPhone] = useState(false);
   const t = useTranslation();
-  const { isAuthenticated } = useAuth();
+  let authContext;
+  try {
+    authContext = useAuth();
+  } catch (error) {
+    console.error('Error getting auth context in Hero:', error);
+    authContext = {
+      isAuthenticated: false,
+    };
+  }
+  const { isAuthenticated } = authContext;
   const navigate = useNavigate();
 
   const handleJoinCommunity = () => {

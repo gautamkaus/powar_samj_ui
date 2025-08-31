@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:8081/api';
 
 // Types
 export interface User {
@@ -75,10 +75,10 @@ export interface Profession {
 export interface AuthResponse {
   message: string;
   user: User;
-  tokens: {
-    accessToken: string;
-    refreshToken: string;
-  };
+  token: string;
+  refreshToken: string;
+  tokenType: string;
+  expiresIn: number;
 }
 
 export interface ApiResponse<T> {
@@ -92,7 +92,18 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
-  return response.json();
+  const data = await response.json();
+  
+  // Handle Java backend response format
+  if (data.success !== undefined) {
+    if (data.success) {
+      return data.data || data;
+    } else {
+      throw new Error(data.message || 'Request failed');
+    }
+  }
+  
+  return data;
 };
 
 // Helper function to get auth headers
@@ -129,7 +140,8 @@ export const authAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
     });
-    return handleResponse<AuthResponse>(response);
+    const data = await handleResponse<any>(response);
+    return data;
   },
 
   // Login user
@@ -139,7 +151,8 @@ export const authAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
     });
-    return handleResponse<AuthResponse>(response);
+    const data = await handleResponse<any>(response);
+    return data;
   },
 
   // Store phone number for unauthenticated users
@@ -149,7 +162,8 @@ export const authAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mobile_no }),
     });
-    return handleResponse<{ message: string; user: any }>(response);
+    const data = await handleResponse<any>(response);
+    return { message: data.message || "Phone number stored successfully", user: data.user };
   },
 
   // Complete user profile for users without passwords
@@ -173,7 +187,8 @@ export const authAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(profileData),
     });
-    return handleResponse<{ message: string; user: User }>(response);
+    const data = await handleResponse<any>(response);
+    return { message: data.message || "Profile completed successfully", user: data.user };
   },
 
   // Logout user
@@ -182,7 +197,8 @@ export const authAPI = {
       method: 'POST',
       headers: getAuthHeaders(),
     });
-    return handleResponse<{ message: string }>(response);
+    const data = await handleResponse<any>(response);
+    return { message: data.message || "Logout successful" };
   },
 
   // Refresh token
@@ -192,7 +208,8 @@ export const authAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
     });
-    return handleResponse<{ message: string; tokens: { accessToken: string; refreshToken: string } }>(response);
+    const data = await handleResponse<any>(response);
+    return { message: data.message || "Token refreshed successfully", tokens: data.tokens };
   },
 };
 
@@ -203,7 +220,8 @@ export const userAPI = {
     const response = await fetch(`${API_BASE_URL}/users/profile`, {
       headers: getAuthHeaders(),
     });
-    return handleResponse<{ message: string; user: User }>(response);
+    const data = await handleResponse<any>(response);
+    return { message: data.message || "Profile fetched successfully", user: data.user };
   },
 
   // Update user profile
@@ -213,7 +231,8 @@ export const userAPI = {
       headers: getAuthHeaders(),
       body: JSON.stringify(profileData),
     });
-    return handleResponse<{ message: string; profile: UserProfile }>(response);
+    const data = await handleResponse<any>(response);
+    return { message: data.message || "Profile updated successfully", profile: data.profile };
   },
 
   // Delete user profile
@@ -222,40 +241,82 @@ export const userAPI = {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
-    return handleResponse<{ message: string }>(response);
+    const data = await handleResponse<any>(response);
+    return { message: data.message || "Profile deleted successfully" };
   },
 };
 
 // Master Data API
 export const masterDataAPI = {
   // Get all states
-  getStates: async (): Promise<ApiResponse<State[]>> => {
-    const response = await fetch(`${API_BASE_URL}/master-data/states`);
-    return handleResponse<ApiResponse<State[]>>(response);
+  getStates: async (): Promise<{ states: State[] }> => {
+    console.log('Fetching states from:', `${API_BASE_URL}/data/states`);
+    const response = await fetch(`${API_BASE_URL}/data/states`);
+    const data = await handleResponse<any>(response);
+    console.log('Raw states response:', data);
+    // Handle Java backend response format
+    if (data.success !== undefined) {
+      console.log('States data from success wrapper:', data.data);
+      return { states: data.data || [] };
+    }
+    console.log('States data direct:', data);
+    return { states: data || [] };
   },
 
   // Get districts by state
-  getDistrictsByState: async (stateId: number): Promise<ApiResponse<District[]>> => {
-    const response = await fetch(`${API_BASE_URL}/master-data/states/${stateId}/districts`);
-    return handleResponse<ApiResponse<District[]>>(response);
+  getDistrictsByState: async (stateId: number): Promise<{ districts: District[] }> => {
+    console.log('Fetching districts for state:', stateId, 'from:', `${API_BASE_URL}/data/states/${stateId}/districts`);
+    const response = await fetch(`${API_BASE_URL}/data/states/${stateId}/districts`);
+    const data = await handleResponse<any>(response);
+    console.log('Raw districts response:', data);
+    // Handle Java backend response format
+    if (data.success !== undefined) {
+      console.log('Districts data from success wrapper:', data.data);
+      return { districts: data.data || [] };
+    }
+    console.log('Districts data direct:', data);
+    return { districts: data || [] };
   },
 
   // Get tahsils by district
-  getTahsilsByDistrict: async (districtId: number): Promise<ApiResponse<Tahsil[]>> => {
-    const response = await fetch(`${API_BASE_URL}/master-data/districts/${districtId}/tahsils`);
-    return handleResponse<ApiResponse<Tahsil[]>>(response);
+  getTahsilsByDistrict: async (districtId: number): Promise<{ tahsils: Tahsil[] }> => {
+    console.log('Fetching tahsils for district:', districtId, 'from:', `${API_BASE_URL}/data/districts/${districtId}/tahsils`);
+    const response = await fetch(`${API_BASE_URL}/data/districts/${districtId}/tahsils`);
+    const data = await handleResponse<any>(response);
+    console.log('Raw tahsils response:', data);
+    // Handle Java backend response format
+    if (data.success !== undefined) {
+      console.log('Tahsils data from success wrapper:', data.data);
+      return { tahsils: data.data || [] };
+    }
+    console.log('Tahsils data direct:', data);
+    return { tahsils: data || [] };
   },
 
   // Get all professions
-  getProfessions: async (): Promise<ApiResponse<Profession[]>> => {
-    const response = await fetch(`${API_BASE_URL}/master-data/professions`);
-    return handleResponse<ApiResponse<Profession[]>>(response);
+  getProfessions: async (): Promise<{ professions: Profession[] }> => {
+    console.log('Fetching professions from:', `${API_BASE_URL}/data/professions`);
+    const response = await fetch(`${API_BASE_URL}/data/professions`);
+    const data = await handleResponse<any>(response);
+    console.log('Raw professions response:', data);
+    // Handle Java backend response format
+    if (data.success !== undefined) {
+      console.log('Professions data from success wrapper:', data.data);
+      return { professions: data.data || [] };
+    }
+    console.log('Professions data direct:', data);
+    return { professions: data || [] };
   },
 
   // Get complete location hierarchy
-  getLocationHierarchy: async (): Promise<ApiResponse<any[]>> => {
-    const response = await fetch(`${API_BASE_URL}/master-data/location-hierarchy`);
-    return handleResponse<ApiResponse<any[]>>(response);
+  getLocationHierarchy: async (): Promise<{ hierarchy: any[] }> => {
+    const response = await fetch(`${API_BASE_URL}/data/location-hierarchy`);
+    const data = await handleResponse<any>(response);
+    // Handle Java backend response format
+    if (data.success !== undefined) {
+      return { hierarchy: data.data || [] };
+    }
+    return { hierarchy: data || [] };
   },
 };
 
@@ -267,22 +328,23 @@ export const blogAPI = {
     if (search) params.append('search', search);
     
     const response = await fetch(`${API_BASE_URL}/blog/posts?${params}`);
-    const result = await handleResponse<{ data: BlogPost[]; pagination: any }>(response);
-    return result;
+    const data = await handleResponse<any>(response);
+    return { data: data, pagination: data.pagination };
   },
 
   // Get blog post by ID
   getPostById: async (id: number): Promise<{ data: BlogPost }> => {
     const response = await fetch(`${API_BASE_URL}/blog/posts/${id}`);
-    return handleResponse<{ data: BlogPost }>(response);
+    const data = await handleResponse<any>(response);
+    return { data: data };
   },
 
   // Get posts by user ID
   getPostsByUser: async (userId: number, page = 1, limit = 20): Promise<{ data: BlogPost[]; pagination: any }> => {
     const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
     const response = await fetch(`${API_BASE_URL}/blog/users/${userId}/posts?${params}`);
-    const result = await handleResponse<{ data: BlogPost[]; pagination: any }>(response);
-    return result;
+    const data = await handleResponse<any>(response);
+    return { data: data, pagination: data.pagination };
   },
 
   // Create new blog post
@@ -292,7 +354,8 @@ export const blogAPI = {
       headers: getAuthHeaders(),
       body: JSON.stringify(postData),
     });
-    return handleResponse<{ message: string; data: BlogPost }>(response);
+    const data = await handleResponse<any>(response);
+    return { message: data.message || "Blog post created successfully", data: data.data };
   },
 
   // Update blog post
@@ -302,7 +365,8 @@ export const blogAPI = {
       headers: getAuthHeaders(),
       body: JSON.stringify(postData),
     });
-    return handleResponse<{ message: string }>(response);
+    const data = await handleResponse<any>(response);
+    return { message: data.message || "Blog post updated successfully" };
   },
 
   // Delete blog post
@@ -311,15 +375,16 @@ export const blogAPI = {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
-    return handleResponse<{ message: string }>(response);
+    const data = await handleResponse<any>(response);
+    return { message: data.message || "Blog post deleted successfully" };
   },
 
   // Search blog posts
   searchPosts: async (query: string, page = 1, limit = 20): Promise<{ data: BlogPost[]; searchQuery: string; pagination: any }> => {
     const params = new URLSearchParams({ q: query, page: page.toString(), limit: limit.toString() });
     const response = await fetch(`${API_BASE_URL}/blog/posts/search?${params}`);
-    const result = await handleResponse<{ data: BlogPost[]; searchQuery: string; pagination: any }>(response);
-    return result;
+    const data = await handleResponse<any>(response);
+    return { data: data.data, searchQuery: data.searchQuery, pagination: data.pagination };
   },
 };
 

@@ -47,18 +47,25 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        console.log('Loading initial data...');
         const [statesRes, professionsRes] = await Promise.all([
           masterDataAPI.getStates(),
           masterDataAPI.getProfessions()
         ]);
         
+        console.log('States response:', statesRes);
+        console.log('Professions response:', professionsRes);
+        
         setStates(statesRes.states || []);
         setProfessions(professionsRes.professions || []);
+        
+        console.log('States loaded:', statesRes.states?.length || 0);
+        console.log('Professions loaded:', professionsRes.professions?.length || 0);
       } catch (error) {
         console.error('Failed to load initial data:', error);
         toast({
           title: "Error",
-          description: "Failed to load form data. Please refresh the page.",
+          description: "Failed to load form data. Please check if the backend is running.",
           variant: "destructive",
         });
       } finally {
@@ -70,30 +77,48 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
   }, [toast]);
 
   const handleStateChange = async (stateId: string) => {
+    console.log('State changed to:', stateId);
     setFormData(prev => ({ ...prev, state_id: stateId, district_id: '', tahsil_id: '' }));
     setDistricts([]);
     setTahsils([]);
 
     if (stateId) {
       try {
+        console.log('Loading districts for state:', stateId);
         const response = await masterDataAPI.getDistrictsByState(parseInt(stateId));
+        console.log('Districts response:', response);
         setDistricts(response.districts || []);
+        console.log('Districts loaded:', response.districts?.length || 0);
       } catch (error) {
         console.error('Failed to load districts:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load districts. Please try again.",
+          variant: "destructive",
+        });
       }
     }
   };
 
   const handleDistrictChange = async (districtId: string) => {
+    console.log('District changed to:', districtId);
     setFormData(prev => ({ ...prev, district_id: districtId, tahsil_id: '' }));
     setTahsils([]);
 
     if (districtId) {
       try {
+        console.log('Loading tahsils for district:', districtId);
         const response = await masterDataAPI.getTahsilsByDistrict(parseInt(districtId));
+        console.log('Tahsils response:', response);
         setTahsils(response.tahsils || []);
+        console.log('Tahsils loaded:', response.tahsils?.length || 0);
       } catch (error) {
         console.error('Failed to load tahsils:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load tahsils. Please try again.",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -290,7 +315,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
               <Label htmlFor="state">State</Label>
               <Select value={formData.state_id} onValueChange={handleStateChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select state" />
+                  <SelectValue placeholder={isLoadingData ? "Loading states..." : "Select state"} />
                 </SelectTrigger>
                 <SelectContent>
                   {states.map((state) => (
@@ -306,7 +331,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
               <Label htmlFor="district">District</Label>
               <Select value={formData.district_id} onValueChange={handleDistrictChange} disabled={!formData.state_id}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select district" />
+                  <SelectValue placeholder={formData.state_id && districts.length === 0 ? "Loading districts..." : "Select district"} />
                 </SelectTrigger>
                 <SelectContent>
                   {districts.map((district) => (
@@ -322,7 +347,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
               <Label htmlFor="tahsil">Tahsil</Label>
               <Select value={formData.tahsil_id} onValueChange={(value) => handleInputChange('tahsil_id', value)} disabled={!formData.district_id}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select tahsil" />
+                  <SelectValue placeholder={formData.district_id && tahsils.length === 0 ? "Loading tahsils..." : "Select tahsil"} />
                 </SelectTrigger>
                 <SelectContent>
                   {tahsils.map((tahsil) => (
@@ -349,7 +374,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
             <Label htmlFor="profession_id">Profession</Label>
             <Select value={formData.profession_id} onValueChange={(value) => handleInputChange('profession_id', value)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select profession" />
+                <SelectValue placeholder={isLoadingData ? "Loading professions..." : "Select profession"} />
               </SelectTrigger>
               <SelectContent>
                 {professions.map((profession) => (
