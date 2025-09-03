@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:8081/api';
+// const API_BASE_URL = 'http://localhost:8081/api';
+const API_BASE_URL = 'http://3.109.201.251:8081/api';
 
 // Types
 export interface User {
