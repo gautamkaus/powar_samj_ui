@@ -2,11 +2,11 @@ name: Deploy React Frontend to S3 + CloudFront
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ dev ]
     paths:
       - 'powar_samj_ui/**'
   pull_request:
-    branches: [ main, master ]
+    branches: [ dev ]
     paths:
       - 'powar_samj_ui/**'
 
