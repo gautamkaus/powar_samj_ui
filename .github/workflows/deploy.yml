@@ -26,9 +26,6 @@ jobs:
   # Build and Test React App
   build-and-test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./powar_samj_ui
 
     steps:
     - name: Checkout code
@@ -55,12 +52,14 @@ jobs:
 
     - name: Install dependencies
       run: |
+        cd powar_samj_ui
         npm ci --prefer-offline --no-audit
       env:
         NODE_ENV: production
 
     - name: Run linting
       run: |
+        cd powar_samj_ui
         if npm run lint --silent 2>/dev/null; then
           echo "✅ Linting passed"
         else
@@ -69,6 +68,7 @@ jobs:
 
     - name: Build React app
       run: |
+        cd powar_samj_ui
         echo "Building React app with API URL: $VITE_API_BASE_URL"
         npm run build
         echo "✅ Build completed successfully"
@@ -81,7 +81,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: react-build
-        path: ./powar_samj_ui/dist
+        path: powar_samj_ui/dist
         retention-days: 1
 
   # Build and Push Docker Image
@@ -98,7 +98,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: react-build
-        path: ./powar_samj_ui/dist
+        path: powar_samj_ui/dist
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -112,8 +112,8 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./powar_samj_ui
-        file: ./powar_samj_ui/Dockerfile
+        context: powar_samj_ui
+        file: powar_samj_ui/Dockerfile
         push: true
         tags: |
           ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
@@ -135,7 +135,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: react-build
-        path: ./powar_samj_ui/dist
+        path: powar_samj_ui/dist
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -146,14 +146,14 @@ jobs:
 
     - name: Deploy to S3
       run: |
-        aws s3 sync ./powar_samj_ui/dist s3://${{ env.S3_BUCKET_NAME }} \
+        aws s3 sync powar_samj_ui/dist s3://${{ env.S3_BUCKET_NAME }} \
           --delete \
           --cache-control "max-age=31536000,public" \
           --exclude "*.html" \
           --exclude "*.json"
         
         # Upload HTML files with no-cache
-        aws s3 sync ./powar_samj_ui/dist s3://${{ env.S3_BUCKET_NAME }} \
+        aws s3 sync powar_samj_ui/dist s3://${{ env.S3_BUCKET_NAME }} \
           --delete \
           --cache-control "no-cache,no-store,must-revalidate" \
           --include "*.html" \
@@ -185,7 +185,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: react-build
-        path: ./powar_samj_ui/dist
+        path: powar_samj_ui/dist
 
     - name: Run security audit
       run: |
