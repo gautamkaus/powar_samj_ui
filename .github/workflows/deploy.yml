@@ -28,8 +28,8 @@ jobs:
         with:
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/powar_samaj_ui:latest
-            ${{ secrets.DOCKERHUB_PASSWORD }}/powar_samaj_ui:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/pawar-samaj-ui:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/pawar-samaj-ui:${{ github.sha }}
 
   # Deploy to S3 and CloudFront
 #  deploy-to-s3-cloudfront:
