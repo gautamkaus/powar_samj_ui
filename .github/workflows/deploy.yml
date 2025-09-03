@@ -19,7 +19,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - name: Build & push backend image
         uses: docker/build-push-action@v6
-         with:
+        with:
           context: ./powar_samj_ui
           dockerfile: Dockerfile
           push: true
@@ -30,7 +30,6 @@ jobs:
   # Deploy to S3 and CloudFront
   deploy-to-s3-cloudfront:
     runs-on: ubuntu-latest
-    needs: build-and-test
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/develop'
 
     steps:
