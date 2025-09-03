@@ -36,30 +36,26 @@ jobs:
         echo "Current directory: $(pwd)"
         echo "Listing contents:"
         ls -la
-        echo "Checking powar_samj_ui directory:"
-        ls -la powar_samj_ui/
         echo "Checking package.json exists:"
-        test -f powar_samj_ui/package.json && echo "✅ package.json found" || echo "❌ package.json not found"
+        test -f package.json && echo "✅ package.json found" || echo "❌ package.json not found"
         echo "Checking package-lock.json exists:"
-        test -f powar_samj_ui/package-lock.json && echo "✅ package-lock.json found" || echo "❌ package-lock.json not found"
+        test -f package-lock.json && echo "✅ package-lock.json found" || echo "❌ package-lock.json not found"
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: 'powar_samj_ui/package-lock.json'
+        cache-dependency-path: 'package-lock.json'
 
     - name: Install dependencies
       run: |
-        cd powar_samj_ui
         npm ci --prefer-offline --no-audit
       env:
         NODE_ENV: production
 
     - name: Run linting
       run: |
-        cd powar_samj_ui
         if npm run lint --silent 2>/dev/null; then
           echo "✅ Linting passed"
         else
@@ -68,7 +64,6 @@ jobs:
 
     - name: Build React app
       run: |
-        cd powar_samj_ui
         echo "Building React app with API URL: $VITE_API_BASE_URL"
         npm run build
         echo "✅ Build completed successfully"
@@ -81,7 +76,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: react-build
-        path: powar_samj_ui/dist
+        path: dist
         retention-days: 1
 
   # Build and Push Docker Image
@@ -98,7 +93,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: react-build
-        path: powar_samj_ui/dist
+        path: dist
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -112,8 +107,8 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: powar_samj_ui
-        file: powar_samj_ui/Dockerfile
+        context: .
+        file: Dockerfile
         push: true
         tags: |
           ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
@@ -135,7 +130,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: react-build
-        path: powar_samj_ui/dist
+        path: dist
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -146,14 +141,14 @@ jobs:
 
     - name: Deploy to S3
       run: |
-        aws s3 sync powar_samj_ui/dist s3://${{ env.S3_BUCKET_NAME }} \
+        aws s3 sync dist s3://${{ env.S3_BUCKET_NAME }} \
           --delete \
           --cache-control "max-age=31536000,public" \
           --exclude "*.html" \
           --exclude "*.json"
         
         # Upload HTML files with no-cache
-        aws s3 sync powar_samj_ui/dist s3://${{ env.S3_BUCKET_NAME }} \
+        aws s3 sync dist s3://${{ env.S3_BUCKET_NAME }} \
           --delete \
           --cache-control "no-cache,no-store,must-revalidate" \
           --include "*.html" \
@@ -185,16 +180,14 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: react-build
-        path: powar_samj_ui/dist
+        path: dist
 
     - name: Run security audit
       run: |
-        cd powar_samj_ui
         npm audit --audit-level moderate
 
     - name: Check bundle size
       run: |
-        cd powar_samj_ui
         npm install -g bundle-analyzer
         echo "Bundle size analysis completed"
 
